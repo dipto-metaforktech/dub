@@ -197,7 +197,7 @@ export const RichTextProvider = forwardRef<
               }),
             ]
           : []),
-      ],
+      ] as any,
       editorProps: {
         attributes: {
           ...editorProps?.attributes,

@@ -53,7 +53,7 @@ export function RichTextToolbar({
           icon={TextBold}
           label="Bold"
           isActive={editorState?.isBold}
-          onClick={() => editor?.chain().focus().toggleBold().run()}
+          onClick={() => (editor?.chain().focus() as any).toggleBold().run()}
         />
       )}
       {features?.includes("italic") && (
@@ -61,7 +61,7 @@ export function RichTextToolbar({
           icon={TextItalic}
           label="Italic"
           isActive={editorState?.isItalic}
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
+          onClick={() => (editor?.chain().focus() as any).toggleItalic().run()}
         />
       )}
       {features?.includes("headings") && (
@@ -71,7 +71,7 @@ export function RichTextToolbar({
             label="Heading 1"
             isActive={editorState?.isHeading1}
             onClick={() =>
-              editor?.chain().focus().toggleHeading({ level: 1 }).run()
+              (editor?.chain().focus() as any).toggleHeading({ level: 1 }).run()
             }
           />
           <RichTextToolbarButton
@@ -79,7 +79,7 @@ export function RichTextToolbar({
             label="Heading 2"
             isActive={editorState?.isHeading2}
             onClick={() =>
-              editor?.chain().focus().toggleHeading({ level: 2 }).run()
+              (editor?.chain().focus() as any).toggleHeading({ level: 2 }).run()
             }
           />
         </>
@@ -149,13 +149,13 @@ function LinkButton() {
         const url = window.prompt("Link URL", previousUrl);
 
         if (!url?.trim()) {
-          editor.chain().focus().extendMarkRange("link").unsetLink().run();
+          (editor.chain().focus() as any).extendMarkRange("link").unsetLink().run();
           return;
         }
 
-        editor
+        (editor
           .chain()
-          .focus()
+          .focus() as any)
           .extendMarkRange("link")
           .setLink({ href: url })
           .run();
