@@ -5,6 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
+  chrono-node: 2.7.5
   '@tiptap/core': 3.10.2
   '@tiptap/pm': 3.10.2
   '@tiptap/react': 3.10.2
@@ -10667,7 +10668,7 @@ packages:
     peerDependencies:
       '@tiptap/extensions': ^3.11.0
     dependencies:
-      '@tiptap/extensions': 3.10.2(@tiptap/core@3.10.2)(@tiptap/pm@3.10.2)
+      '@tiptap/extensions': 3.10.2(@tiptap/core@3.11.0)(@tiptap/pm@3.10.2)
     dev: false
 
   /@tiptap/extension-file-handler@3.10.2(@tiptap/core@3.11.0)(@tiptap/extension-text-style@3.11.0)(@tiptap/pm@3.10.2):
@@ -10701,7 +10702,7 @@ packages:
     peerDependencies:
       '@tiptap/extensions': ^3.11.0
     dependencies:
-      '@tiptap/extensions': 3.10.2(@tiptap/core@3.10.2)(@tiptap/pm@3.10.2)
+      '@tiptap/extensions': 3.10.2(@tiptap/core@3.11.0)(@tiptap/pm@3.10.2)
     dev: false
 
   /@tiptap/extension-hard-break@3.11.0(@tiptap/core@3.10.2):
@@ -10843,16 +10844,6 @@ packages:
       '@tiptap/core': 3.10.2(@tiptap/pm@3.10.2)
     dev: false
 
-  /@tiptap/extensions@3.10.2(@tiptap/core@3.10.2)(@tiptap/pm@3.10.2):
-    resolution: {integrity: sha512-XyvMn6B6PCPsgV6VMLiS1QXI1OKarBAYwXmqsE+gCzzYyXxYX4sLUlQ8JKysREyIGMHxSg5vgOajsgXgFMrvyA==}
-    peerDependencies:
-      '@tiptap/core': ^3.10.2
-      '@tiptap/pm': ^3.10.2
-    dependencies:
-      '@tiptap/core': 3.10.2(@tiptap/pm@3.10.2)
-      '@tiptap/pm': 3.10.2
-    dev: false
-
   /@tiptap/extensions@3.10.2(@tiptap/core@3.11.0)(@tiptap/pm@3.10.2):
     resolution: {integrity: sha512-XyvMn6B6PCPsgV6VMLiS1QXI1OKarBAYwXmqsE+gCzzYyXxYX4sLUlQ8JKysREyIGMHxSg5vgOajsgXgFMrvyA==}
     peerDependencies:
@@ -10960,7 +10951,7 @@ packages:
       '@tiptap/extension-strike': 3.11.0(@tiptap/core@3.10.2)
       '@tiptap/extension-text': 3.11.0(@tiptap/core@3.10.2)
       '@tiptap/extension-underline': 3.11.0(@tiptap/core@3.10.2)
-      '@tiptap/extensions': 3.10.2(@tiptap/core@3.10.2)(@tiptap/pm@3.10.2)
+      '@tiptap/extensions': 3.10.2(@tiptap/core@3.11.0)(@tiptap/pm@3.10.2)
       '@tiptap/pm': 3.10.2
     dev: false
 

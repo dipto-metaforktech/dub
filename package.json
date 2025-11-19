@@ -29,11 +29,9 @@
     "tsconfig": "workspace:*",
     "turbo": "^1.12.5"
   },
-  "resolutions": {
-    "chrono-node": "2.7.5"
-  },
   "pnpm": {
     "overrides": {
+      "chrono-node": "2.7.5",
       "@tiptap/core": "3.10.2",
       "@tiptap/pm": "3.10.2",
       "@tiptap/react": "3.10.2",
