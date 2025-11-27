@@ -1,6 +1,5 @@
 import { handleAndReturnErrorResponse } from "@/lib/api/errors";
 import { verifyQstashSignature } from "@/lib/cron/verify-qstash";
-import { disableStripeDiscountCode } from "@/lib/stripe/disable-stripe-discount-code";
 import { prisma } from "@dub/prisma";
 import { logAndRespond } from "../../../utils";
 
@@ -11,8 +10,8 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ discountCodeId: string }> },
 ) {
-    if (process.env.VERCEL === "1") {
-    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  if (process.env.VERCEL) {
+    return logAndRespond("Skipping cron job on Vercel");
   }
   try {
     const { discountCodeId } = await params;
@@ -42,6 +41,10 @@ export async function POST(
         stripeConnectId: true,
       },
     });
+
+    const { disableStripeDiscountCode } = await import(
+      "@/lib/stripe/disable-stripe-discount-code"
+    );
 
     const disabledDiscountCode = await disableStripeDiscountCode({
       code: discountCode.code,
