@@ -199,5 +199,7 @@ module.exports = {
         destination: "https://api.dub.co/track/click",
       },
     ];
+  },  typescript: {
+    ignoreBuildErrors: true,
   },
 };

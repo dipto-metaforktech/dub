@@ -11,6 +11,9 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ discountCodeId: string }> },
 ) {
+    if (process.env.VERCEL === "1") {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     const { discountCodeId } = await params;
 

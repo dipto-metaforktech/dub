@@ -42,7 +42,7 @@ const columnAccessors = {
   clickId: (r: ClickEvent) => r.click.id,
 };
 
-// GET /api/events/export – get export data for analytics
+// GET /api/events/export – get export data for analytics
 export const GET = withWorkspace(
   async ({ searchParams, workspace, session }) => {
     throwIfClicksUsageExceeded(workspace);
@@ -54,6 +54,12 @@ export const GET = withWorkspace(
             .string()
             .transform((c) => c.split(","))
             .pipe(z.string().array()),
+          domain: z.string().optional(),
+          interval: z.string().optional(),
+          start: z.string().optional(),
+          end: z.string().optional(),
+          key: z.string().optional(),
+          folderId: z.string().optional(),
         }),
       )
       .parse(searchParams);
