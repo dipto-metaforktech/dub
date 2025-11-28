@@ -1,7 +1,7 @@
 import { withAxiom } from "@/lib/axiom/server";
 import { stripe } from "@/lib/stripe";
 import { StripeMode } from "@/lib/types";
-import { logAndRespond } from "app/(ee)/api/cron/utils";
+
 import Stripe from "stripe";
 import { accountApplicationDeauthorized } from "./account-application-deauthorized";
 import { chargeRefunded } from "./charge-refunded";
@@ -72,7 +72,7 @@ export const POST = withAxiom(async (req: Request) => {
   // and live mode events are sent to the live mode endpoint.
   // See: https://docs.stripe.com/stripe-apps/build-backend#event-behavior-depends-on-install-mode
   if (!event.livemode && mode === "live") {
-    return logAndRespond(
+    return new Response(
       `Received a test webhook event (${event.type}) on our live webhook receiver endpoint, skipping...`,
     );
   }
@@ -106,5 +106,8 @@ export const POST = withAxiom(async (req: Request) => {
       break;
   }
 
-  return logAndRespond(`[${event.type}]: ${response}`);
+  return new Response(response, {
+    status: 200,
+  });
+
 });

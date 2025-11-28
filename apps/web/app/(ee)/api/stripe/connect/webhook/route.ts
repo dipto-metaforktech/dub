@@ -1,6 +1,6 @@
 import { stripe } from "@/lib/stripe";
 import { log } from "@dub/utils";
-import { logAndRespond } from "app/(ee)/api/cron/utils";
+
 import Stripe from "stripe";
 import { accountApplicationDeauthorized } from "./account-application-deauthorized";
 import { accountUpdated } from "./account-updated";
@@ -65,5 +65,7 @@ export const POST = async (req: Request) => {
     });
   }
 
-  return logAndRespond(`[${event.type}]: ${response}`);
+  return new Response(response, {
+    status: 200,
+  });
 };
