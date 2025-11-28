@@ -1,5 +1,3 @@
-import { createPaypalToken } from "@/lib/paypal/create-paypal-token";
-import { paypalEnv } from "@/lib/paypal/env";
 import { Partner, Payout, Program } from "@dub/prisma/client";
 
 interface CreatePayPalBatchPayout {
@@ -15,6 +13,14 @@ export async function createPayPalBatchPayout({
   payouts,
   invoiceId,
 }: CreatePayPalBatchPayout) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
+  const { createPaypalToken } = await import(
+    "@/lib/paypal/create-paypal-token"
+  );
+  const { paypalEnv } = await import("@/lib/paypal/env");
+
   const paypalAccessToken = await createPaypalToken();
 
   const body = {

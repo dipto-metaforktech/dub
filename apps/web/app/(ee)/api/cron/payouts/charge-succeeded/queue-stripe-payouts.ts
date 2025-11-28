@@ -1,6 +1,3 @@
-import { qstash } from "@/lib/cron";
-import { prisma } from "@dub/prisma";
-import { APP_DOMAIN_WITH_NGROK, chunk, log } from "@dub/utils";
 import { Invoice } from "@prisma/client";
 import { z } from "zod";
 
@@ -14,6 +11,13 @@ export async function queueStripePayouts(
     "id" | "paymentMethod" | "stripeChargeMetadata" | "payoutMode"
   >,
 ) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
+  const { qstash } = await import("@/lib/cron");
+  const { prisma } = await import("@dub/prisma");
+  const { APP_DOMAIN_WITH_NGROK, chunk, log } = await import("@dub/utils");
+
   // All payouts are processed externally, hence no need to queue Stripe payouts
   if (invoice.payoutMode === "external") {
     return;

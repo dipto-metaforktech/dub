@@ -1,11 +1,19 @@
-import { queueBatchEmail } from "@/lib/email/queue-batch-email";
-import { createPayPalBatchPayout } from "@/lib/paypal/create-batch-payout";
-import PartnerPayoutProcessed from "@dub/email/templates/partner-payout-processed";
-import { prisma } from "@dub/prisma";
 import { Invoice } from "@dub/prisma/client";
-import { currencyFormatter } from "@dub/utils";
 
 export async function sendPaypalPayouts(invoice: Pick<Invoice, "id">) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
+  const { queueBatchEmail } = await import("@/lib/email/queue-batch-email");
+  const { createPayPalBatchPayout } = await import(
+    "@/lib/paypal/create-batch-payout"
+  );
+  const { default: PartnerPayoutProcessed } = await import(
+    "@dub/email/templates/partner-payout-processed"
+  );
+  const { prisma } = await import("@dub/prisma");
+  const { currencyFormatter } = await import("@dub/utils");
+
   const payouts = await prisma.payout.findMany({
     where: {
       invoiceId: invoice.id,

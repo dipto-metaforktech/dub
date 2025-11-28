@@ -1,13 +1,8 @@
 import { handleAndReturnErrorResponse } from "@/lib/api/errors";
-import { linkCache } from "@/lib/api/links/cache";
-import { qstash } from "@/lib/cron";
 import { verifyQstashSignature } from "@/lib/cron/verify-qstash";
-import { recordLink } from "@/lib/tinybird";
-import { prisma } from "@dub/prisma";
-import { APP_DOMAIN_WITH_NGROK, log } from "@dub/utils";
+import { log } from "@dub/utils";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { sendDomainTransferredEmail } from "./utils";
 
 const schema = z.object({
   currentWorkspaceId: z.string(),
@@ -18,7 +13,16 @@ const schema = z.object({
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
+    const { qstash } = await import("@/lib/cron");
+    const { linkCache } = await import("@/lib/api/links/cache");
+    const { recordLink } = await import("@/lib/tinybird");
+    const { prisma } = await import("@dub/prisma");
+    const { APP_DOMAIN_WITH_NGROK } = await import("@dub/utils");
+    const { sendDomainTransferredEmail } = await import("./utils");
     const rawBody = await req.text();
     await verifyQstashSignature({ req, rawBody });
 

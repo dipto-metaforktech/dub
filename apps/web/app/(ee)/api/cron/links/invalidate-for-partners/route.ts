@@ -1,7 +1,5 @@
 import { handleAndReturnErrorResponse } from "@/lib/api/errors";
-import { linkCache } from "@/lib/api/links/cache";
 import { verifyQstashSignature } from "@/lib/cron/verify-qstash";
-import { prisma } from "@dub/prisma";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +11,12 @@ const schema = z.object({
 // This route is used to invalidate the partnerlink cache when the partner info is updated.
 // POST /api/cron/links/invalidate-for-partners
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
+    const { linkCache } = await import("@/lib/api/links/cache");
+    const { prisma } = await import("@dub/prisma");
     const rawBody = await req.text();
     await verifyQstashSignature({ req, rawBody });
 

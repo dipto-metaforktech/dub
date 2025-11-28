@@ -6,8 +6,6 @@ import { prisma } from "@dub/prisma";
 import { log } from "@dub/utils";
 import { z } from "zod";
 import { logAndRespond } from "../../utils";
-import { processPayouts } from "./process-payouts";
-import { splitPayouts } from "./split-payouts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 600; // This function can run for a maximum of 10 minutes
@@ -26,6 +24,9 @@ const processPayoutsCronSchema = z.object({
 // This route is used to process payouts for a given invoice
 // we're intentionally offloading this to a cron job to avoid blocking the main thread
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     const rawBody = await req.text();
 
@@ -54,6 +55,7 @@ export async function POST(req: Request) {
     });
 
     if (cutoffPeriod) {
+      const { splitPayouts } = await import("./split-payouts");
       await splitPayouts({
         program,
         cutoffPeriod,
@@ -61,7 +63,7 @@ export async function POST(req: Request) {
         excludedPayoutIds,
       });
     }
-
+    const { processPayouts } = await import("./process-payouts");
     await processPayouts({
       workspace,
       program,

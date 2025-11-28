@@ -1,16 +1,5 @@
 import { handleAndReturnErrorResponse } from "@/lib/api/errors";
-import { qstash } from "@/lib/cron";
 import { verifyQstashSignature } from "@/lib/cron/verify-qstash";
-import { stripe } from "@/lib/stripe";
-import { sendEmail } from "@dub/email";
-import PartnerPayoutWithdrawalInitiated from "@dub/email/templates/partner-payout-withdrawal-initiated";
-import { prisma } from "@dub/prisma";
-import {
-  APP_DOMAIN_WITH_NGROK,
-  currencyFormatter,
-  formatDate,
-  log,
-} from "@dub/utils";
 import { z } from "zod";
 import { logAndRespond } from "../../utils";
 export const dynamic = "force-dynamic";
@@ -21,7 +10,20 @@ const payloadSchema = z.object({
 
 // POST /api/cron/payouts/balance-available
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
+    const { qstash } = await import("@/lib/cron");
+    const { stripe } = await import("@/lib/stripe");
+    const { sendEmail } = await import("@dub/email");
+    const { default: PartnerPayoutWithdrawalInitiated } = await import(
+      "@dub/email/templates/partner-payout-withdrawal-initiated"
+    );
+    const { prisma } = await import("@dub/prisma");
+    const { APP_DOMAIN_WITH_NGROK, currencyFormatter, formatDate, log } =
+      await import("@dub/utils");
+
     const rawBody = await req.text();
     await verifyQstashSignature({ req, rawBody });
 
@@ -165,6 +167,7 @@ export async function POST(req: Request) {
       `Processed "balance.available" for partner ${partner.email} (${stripeAccount})`,
     );
   } catch (error) {
+    const { log } = await import("@dub/utils");
     await log({
       message: `Error handling "balance.available" ${error.message}.`,
       type: "errors",

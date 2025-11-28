@@ -1,14 +1,5 @@
-import { queueDomainDeletion } from "@/lib/api/domains/queue-domain-update";
 import { handleAndReturnErrorResponse } from "@/lib/api/errors";
-import { linkCache } from "@/lib/api/links/cache";
-import { includeProgramEnrollment } from "@/lib/api/links/include-program-enrollment";
-import { includeTags } from "@/lib/api/links/include-tags";
-import { limiter } from "@/lib/cron/limiter";
 import { verifyQstashSignature } from "@/lib/cron/verify-qstash";
-import { storage } from "@/lib/storage";
-import { recordLink } from "@/lib/tinybird/record-link";
-import { prisma } from "@dub/prisma";
-import { R2_URL } from "@dub/utils";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -19,11 +10,27 @@ const schema = z.object({
 
 // POST /api/cron/domains/delete
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     const rawBody = await req.text();
     await verifyQstashSignature({ req, rawBody });
 
     const { domain } = schema.parse(JSON.parse(rawBody));
+    const { queueDomainDeletion } = await import(
+      "@/lib/api/domains/queue-domain-update"
+    );
+    const { linkCache } = await import("@/lib/api/links/cache");
+    const { includeProgramEnrollment } = await import(
+      "@/lib/api/links/include-program-enrollment"
+    );
+    const { includeTags } = await import("@/lib/api/links/include-tags");
+    const { limiter } = await import("@/lib/cron/limiter");
+    const { storage } = await import("@/lib/storage");
+    const { recordLink } = await import("@/lib/tinybird/record-link");
+    const { prisma } = await import("@dub/prisma");
+    const { R2_URL } = await import("@dub/utils");
 
     const domainRecord = await prisma.domain.findUnique({
       where: {

@@ -3,7 +3,6 @@ import { verifyQstashSignature } from "@/lib/cron/verify-qstash";
 import { verifyVercelSignature } from "@/lib/cron/verify-vercel";
 import { log } from "@dub/utils";
 import { NextResponse } from "next/server";
-import { updateUsage } from "./utils";
 
 /*
     This route is used to update the usage stats of each workspace.
@@ -12,6 +11,9 @@ import { updateUsage } from "./utils";
 export const dynamic = "force-dynamic";
 
 async function handler(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     if (req.method === "GET") {
       await verifyVercelSignature(req);
@@ -21,7 +23,7 @@ async function handler(req: Request) {
         rawBody: await req.text(),
       });
     }
-
+    const { updateUsage } = await import("./utils");
     await updateUsage();
 
     return NextResponse.json({

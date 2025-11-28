@@ -1,10 +1,4 @@
-import { queueBatchEmail } from "@/lib/email/queue-batch-email";
-import { sendWorkspaceWebhook } from "@/lib/webhook/publish";
-import { payoutWebhookEventSchema } from "@/lib/zod/schemas/payouts";
-import type PartnerPayoutConfirmed from "@dub/email/templates/partner-payout-confirmed";
-import { prisma } from "@dub/prisma";
 import { Invoice } from "@dub/prisma/client";
-import { currencyFormatter } from "@dub/utils";
 
 export async function queueExternalPayouts(
   invoice: Pick<
@@ -12,6 +6,20 @@ export async function queueExternalPayouts(
     "id" | "paymentMethod" | "programId" | "workspaceId" | "payoutMode"
   >,
 ) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
+  const { queueBatchEmail } = await import("@/lib/email/queue-batch-email");
+  const { sendWorkspaceWebhook } = await import("@/lib/webhook/publish");
+  const { payoutWebhookEventSchema } = await import(
+    "@/lib/zod/schemas/payouts"
+  );
+  const { default: PartnerPayoutConfirmed } = await import(
+    "@dub/email/templates/partner-payout-confirmed"
+  );
+  const { prisma } = await import("@dub/prisma");
+  const { currencyFormatter } = await import("@dub/utils");
+
   // All payouts are processed internally, hence no need to queue external payouts
   if (invoice.payoutMode === "internal") {
     console.log(`Invoice ${invoice.id} is paid internally. Skipping...`);
