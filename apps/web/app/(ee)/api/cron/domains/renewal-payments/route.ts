@@ -1,7 +1,6 @@
 import { createId } from "@/lib/api/create-id";
 import { handleAndReturnErrorResponse } from "@/lib/api/errors";
 import { verifyVercelSignature } from "@/lib/cron/verify-vercel";
-import { createPaymentIntent } from "@/lib/stripe/create-payment-intent";
 import { prisma } from "@dub/prisma";
 import { log } from "@dub/utils";
 import { Invoice, Project, RegisteredDomain } from "@prisma/client";
@@ -24,6 +23,9 @@ interface GroupedWorkspace {
 
 // GET /api/cron/domains/renewal-payments
 export async function GET(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     await verifyVercelSignature(req);
 
@@ -126,6 +128,10 @@ export async function GET(req: Request) {
 
       invoices.push(invoice);
     }
+
+    const { createPaymentIntent } = await import(
+      "@/lib/stripe/create-payment-intent"
+    );
 
     // Create payment intent for each invoice
     for (const invoice of invoices) {

@@ -1,16 +1,14 @@
 import { handleAndReturnErrorResponse } from "@/lib/api/errors";
 import { verifyQstashSignature } from "@/lib/cron/verify-qstash";
-import { importCampaigns } from "@/lib/firstpromoter/import-campaigns";
-import { importCommissions } from "@/lib/firstpromoter/import-commissions";
-import { importCustomers } from "@/lib/firstpromoter/import-customers";
-import { importPartners } from "@/lib/firstpromoter/import-partners";
 import { firstPromoterImportPayloadSchema } from "@/lib/firstpromoter/schemas";
-import { updateStripeCustomers } from "@/lib/firstpromoter/update-stripe-customers";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     const rawBody = await req.text();
 
@@ -23,18 +21,33 @@ export async function POST(req: Request) {
 
     switch (payload.action) {
       case "import-campaigns":
+        const { importCampaigns } = await import(
+          "@/lib/firstpromoter/import-campaigns"
+        );
         await importCampaigns(payload);
         break;
       case "import-partners":
+        const { importPartners } = await import(
+          "@/lib/firstpromoter/import-partners"
+        );
         await importPartners(payload);
         break;
       case "import-customers":
+        const { importCustomers } = await import(
+          "@/lib/firstpromoter/import-customers"
+        );
         await importCustomers(payload);
         break;
       case "import-commissions":
+        const { importCommissions } = await import(
+          "@/lib/firstpromoter/import-commissions"
+        );
         await importCommissions(payload);
         break;
       case "update-stripe-customers":
+        const { updateStripeCustomers } = await import(
+          "@/lib/firstpromoter/update-stripe-customers"
+        );
         await updateStripeCustomers(payload);
         break;
       default:
