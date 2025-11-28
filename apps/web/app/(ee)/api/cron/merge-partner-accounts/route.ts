@@ -26,6 +26,9 @@ const CACHE_KEY_PREFIX = "merge-partner-accounts";
 // POST /api/cron/merge-partner-accounts
 // This route is used to merge a partner account into another account
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   let userId: string | null = null;
 
   try {

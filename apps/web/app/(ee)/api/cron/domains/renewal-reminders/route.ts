@@ -28,6 +28,9 @@ const REMINDER_WINDOWS = [30, 23, 16];
 
 // GET /api/cron/domains/renewal-reminders
 export async function GET(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     await verifyVercelSignature(req);
 

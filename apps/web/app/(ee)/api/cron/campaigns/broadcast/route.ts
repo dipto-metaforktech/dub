@@ -35,6 +35,9 @@ const EXTENDED_DELAY_INTERVAL = 25; // Number of batches after which to extend t
 // POST /api/cron/campaigns/broadcast
 // Send marketing campaigns to partners in batches
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     const rawBody = await req.text();
 

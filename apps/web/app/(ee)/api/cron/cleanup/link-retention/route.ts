@@ -15,6 +15,9 @@ export const dynamic = "force-dynamic";
 // Runs once every 12 hours (0 */12 * * *)
 // GET /api/cron/cleanup/link-retention
 async function handler(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     if (req.method === "GET") {
       await verifyVercelSignature(req);

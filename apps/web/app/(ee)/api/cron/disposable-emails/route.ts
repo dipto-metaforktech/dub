@@ -9,6 +9,9 @@ export const dynamic = "force-dynamic";
 // Cron to update the disposable email domains list in Redis
 // Runs every Monday at noon UTC (0 12 * * 1)
 export async function GET(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     await verifyVercelSignature(req);
 

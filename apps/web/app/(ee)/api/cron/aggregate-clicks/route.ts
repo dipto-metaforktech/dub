@@ -18,6 +18,9 @@ export const dynamic = "force-dynamic";
 // Runs every day at 00:00 (0 0 * * *)
 // GET /api/cron/aggregate-clicks
 export async function GET(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     await verifyVercelSignature(req);
 

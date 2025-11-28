@@ -23,6 +23,9 @@ const MAX_PAGE_SIZE = 100;
 // POST /api/cron/bounties/create-draft-submissions
 // Create draft bounty submissions for performance bounties with lifetime performance scope
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     const rawBody = await req.text();
 

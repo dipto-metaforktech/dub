@@ -21,6 +21,9 @@ const payloadSchema = commissionsExportQuerySchema.extend({
 
 // POST /api/cron/commissions/export - QStash worker for processing large commission exports
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     const rawBody = await req.text();
 

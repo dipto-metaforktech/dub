@@ -36,6 +36,9 @@ interface BatchError {
 
 // POST /api/cron/send-batch-email
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     const rawBody = await req.text();
 

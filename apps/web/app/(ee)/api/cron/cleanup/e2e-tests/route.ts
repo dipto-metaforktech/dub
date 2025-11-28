@@ -20,6 +20,9 @@ const E2E_WORKSPACE_ID = "clrei1gld0002vs9mzn93p8ik";
 */
 // GET /api/cron/cleanup/e2e-tests
 export async function GET(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     await verifyVercelSignature(req);
 

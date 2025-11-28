@@ -45,6 +45,9 @@ const schema = z.object({
 
 // GET/POST /api/cron/partner-program-summary
 async function handler(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     let programSkip = 0;
     const programsTake = 1;

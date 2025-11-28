@@ -11,6 +11,9 @@ export async function POST(
     params: Promise<{ linkId: string }>;
   },
 ) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   const params = await props.params;
 
   const { linkId } = params;

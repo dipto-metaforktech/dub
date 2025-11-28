@@ -11,6 +11,9 @@ export const dynamic = "force-dynamic";
     Runs once a day at 06:00 AM UTC (cron expression: 0 6 * * *)
 */
 export async function GET(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     await verifyVercelSignature(req);
 

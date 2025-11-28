@@ -9,6 +9,9 @@ export const dynamic = "force-dynamic";
 // Cron to update the Foreign Exchange Rates in Redis
 // Runs once every day at 08:00 AM UTC (0 8 * * *)
 export async function GET(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     await verifyVercelSignature(req);
 

@@ -9,6 +9,9 @@ import { APP_DOMAIN_WITH_NGROK } from "@dub/utils/src/constants";
 // POST - /api/cron/program-application-reminder
 // Sends an email if a program application hasn't received an associated partner
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     const rawBody = await req.text();
     await verifyQstashSignature({ req, rawBody });

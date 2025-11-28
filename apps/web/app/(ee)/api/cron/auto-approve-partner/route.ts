@@ -15,6 +15,9 @@ const schema = z.object({
 // POST /api/cron/auto-approve-partner
 // This route is used to auto-approve a partner enrolled in a program
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     const rawBody = await req.text();
 

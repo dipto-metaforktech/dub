@@ -54,6 +54,9 @@ const getFramerLeadEvents = tb.buildPipe({
 
 // POST /api/cron/framer/backfill-leads-batch
 export const POST = withWorkspace(async ({ req, workspace }) => {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     if (workspace.id !== FRAMER_WORKSPACE_ID) {
       throw new DubApiError({

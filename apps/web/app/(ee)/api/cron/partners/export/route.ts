@@ -21,6 +21,9 @@ const payloadSchema = partnersExportQuerySchema.extend({
 
 // POST /api/cron/partners/export - QStash worker for processing large partner exports
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     const rawBody = await req.text();
 

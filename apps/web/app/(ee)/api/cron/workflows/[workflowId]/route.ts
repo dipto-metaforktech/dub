@@ -14,6 +14,9 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ workflowId: string }> },
 ) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   const { workflowId } = await params;
 
   try {

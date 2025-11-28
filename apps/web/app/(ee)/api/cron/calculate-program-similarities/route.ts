@@ -27,6 +27,9 @@ const PROGRAMS_PER_BATCH = 10;
 
 // GET /api/cron/calculate-program-similarities - Initial cron request from Vercel
 export async function GET(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     await verifyVercelSignature(req);
 

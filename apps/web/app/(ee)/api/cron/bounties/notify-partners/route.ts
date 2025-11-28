@@ -31,6 +31,9 @@ const EXTENDED_DELAY_INTERVAL = 25; // Number of batches after which to extend t
 // POST /api/cron/bounties/notify-partners
 // Send emails to eligible partners about new bounty that is published
 export async function POST(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     const rawBody = await req.text();
 

@@ -19,6 +19,9 @@ import { handleDomainUpdates } from "./utils";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
+  if (process.env.VERCEL) {
+    return new Response("Skipping cron job on Vercel build", { status: 200 });
+  }
   try {
     await verifyVercelSignature(req);
 
