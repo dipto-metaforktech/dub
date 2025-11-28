@@ -202,4 +202,7 @@ module.exports = {
   },  typescript: {
     ignoreBuildErrors: true,
   },
+  env: {
+    AXIOM_TOKEN: process.env.AXIOM_TOKEN,
+  }
 };

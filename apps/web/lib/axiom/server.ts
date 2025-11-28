@@ -1,3 +1,4 @@
+// logger.ts
 import {
   AxiomJSTransport,
   ConsoleTransport,
@@ -10,9 +11,13 @@ import {
   transformRouteHandlerSuccessResult,
 } from "@axiomhq/nextjs";
 import { getSearchParams } from "@dub/utils";
-import { axiomClient } from "./axiom";
+import { getAxiomClient } from "./axiom";
 
-const isAxiomEnabled = process.env.AXIOM_DATASET && process.env.AXIOM_TOKEN;
+// Load client safely
+const axiomClient = getAxiomClient();
+
+const isAxiomEnabled =
+  Boolean(process.env.AXIOM_DATASET) && Boolean(axiomClient);
 
 const getLogLevelFromStatusCode = (statusCode: number) => {
   if (statusCode >= 100 && statusCode < 400) {
@@ -30,7 +35,7 @@ export const logger = new Logger({
   transports: isAxiomEnabled
     ? [
         new AxiomJSTransport({
-          axiom: axiomClient,
+          axiom: axiomClient!,
           dataset: process.env.AXIOM_DATASET!,
         }),
       ]
@@ -42,17 +47,16 @@ export const withAxiomBodyLog = createAxiomRouteHandler(logger, {
   onSuccess: async (data) => {
     const [message, report] = transformRouteHandlerSuccessResult(data);
 
-    // Add body to report if the method is POST, PATCH, or PUT
+    // Add body if POST, PATCH, PUT
     if (["POST", "PATCH", "PUT"].includes(data.req.method)) {
       try {
         report.body = await data.req.json();
-      } catch (error) {
-        // Body might be empty, invalid JSON
-        // Silently skip adding body to report
+      } catch {
+        // Ignore empty/invalid bodies
       }
     }
 
-    // Add search params to report
+    // Add search params
     report.searchParams = getSearchParams(data.req.url);
 
     logger.log(getLogLevelFromStatusCode(data.res.status), message, report);
