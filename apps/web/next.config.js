@@ -41,6 +41,12 @@ module.exports = {
     ],
   },
   webpack: (config, { webpack, isServer }) => {
+    // Ignore the /app/(ee) directory
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /^\.\/app\/\(ee\)/,
+      })
+    );
     if (isServer) {
       config.plugins.push(
         // mute errors for unused typeorm deps
@@ -205,6 +211,5 @@ module.exports = {
   },
   env: {
     AXIOM_TOKEN: process.env.AXIOM_TOKEN,
-  },
-  exclude: ["./app/(ee)"],
+  }
 };
