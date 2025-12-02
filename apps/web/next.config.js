@@ -199,10 +199,12 @@ module.exports = {
         destination: "https://api.dub.co/track/click",
       },
     ];
-  },  typescript: {
+  },
+  typescript: {
     ignoreBuildErrors: true,
   },
   env: {
     AXIOM_TOKEN: process.env.AXIOM_TOKEN,
-  }
+  },
+  exclude: ["./app/(ee)"],
 };
