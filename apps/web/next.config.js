@@ -24,14 +24,7 @@ module.exports = {
     "shiki",
     "@dub/prisma",
     "@dub/email",
-    "@boxyhq/saml-jackson",
   ],
-  outputFileTracingIncludes: {
-    "/api/auth/saml/token": [
-      "./node_modules/jose/**/*",
-      "./node_modules/openid-client/**/*",
-    ],
-  },
   experimental: {
     optimizePackageImports: [
       "@dub/email",
@@ -41,12 +34,6 @@ module.exports = {
     ],
   },
   webpack: (config, { webpack, isServer }) => {
-    // Ignore the /app/(ee) directory
-    config.plugins.push(
-      new webpack.IgnorePlugin({
-        resourceRegExp: /^\.\/app\/\(ee\)/,
-      })
-    );
     if (isServer) {
       config.plugins.push(
         // mute errors for unused typeorm deps
@@ -70,12 +57,6 @@ module.exports = {
     remotePatterns: [
       {
         hostname: "assets.dub.co", // for Dub's static assets
-      },
-      {
-        hostname: "dubassets.com", // for Dub's user generated images
-      },
-      {
-        hostname: "dev.dubassets.com", // dev bucket
       },
       {
         hostname: "www.google.com",
@@ -133,70 +114,6 @@ module.exports = {
       },
     ];
   },
-  async redirects() {
-    return [
-      {
-        source: "/",
-        has: [
-          {
-            type: "host",
-            value: "app.dub.sh",
-          },
-        ],
-        destination: "https://app.dub.co",
-        permanent: true,
-        statusCode: 301,
-      },
-      {
-        source: "/:path*",
-        has: [
-          {
-            type: "host",
-            value: "app.dub.sh",
-          },
-        ],
-        destination: "https://app.dub.co/:path*",
-        permanent: true,
-        statusCode: 301,
-      },
-      {
-        source: "/",
-        has: [
-          {
-            type: "host",
-            value: "staging.dub.sh",
-          },
-        ],
-        destination: "https://dub.co",
-        permanent: true,
-        statusCode: 301,
-      },
-      {
-        source: "/",
-        has: [
-          {
-            type: "host",
-            value: "preview.dub.sh",
-          },
-        ],
-        destination: "https://preview.dub.co",
-        permanent: true,
-        statusCode: 301,
-      },
-      {
-        source: "/",
-        has: [
-          {
-            type: "host",
-            value: "admin.dub.sh",
-          },
-        ],
-        destination: "https://admin.dub.co",
-        permanent: true,
-        statusCode: 301,
-      },
-    ];
-  },
   async rewrites() {
     return [
       // for dub proxy
@@ -209,7 +126,4 @@ module.exports = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  env: {
-    AXIOM_TOKEN: process.env.AXIOM_TOKEN,
-  }
 };

@@ -1,6 +1,5 @@
 import { logger } from "@/lib/axiom/server";
 import {
-  AdminMiddleware,
   ApiMiddleware,
   AppMiddleware,
   CreateLinkMiddleware,
@@ -9,15 +8,12 @@ import {
 import { parse } from "@/lib/middleware/utils";
 import { transformMiddlewareRequest } from "@axiomhq/nextjs";
 import {
-  ADMIN_HOSTNAMES,
   API_HOSTNAMES,
   APP_HOSTNAMES,
   DEFAULT_REDIRECTS,
   isValidUrl,
 } from "@dub/utils";
-import { PARTNERS_HOSTNAMES } from "@dub/utils/src/constants";
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
-import { PartnersMiddleware } from "./lib/middleware/partners";
 import { supportedWellKnownFiles } from "./lib/well-known";
 
 export const config = {
@@ -68,15 +64,6 @@ export default async function middleware(req: NextRequest, ev: NextFetchEvent) {
   // default redirects for dub.sh
   if (domain === "dub.sh" && DEFAULT_REDIRECTS[key]) {
     return NextResponse.redirect(DEFAULT_REDIRECTS[key]);
-  }
-
-  // for Admin
-  if (ADMIN_HOSTNAMES.has(domain)) {
-    return AdminMiddleware(req);
-  }
-
-  if (PARTNERS_HOSTNAMES.has(domain)) {
-    return PartnersMiddleware(req);
   }
 
   if (isValidUrl(fullKey)) {
