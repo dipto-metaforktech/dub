@@ -1,6 +1,7 @@
 import { sendEmail } from "@dub/email";
 import PartnerPayoutWithdrawalCompleted from "@dub/email/templates/partner-payout-withdrawal-completed";
 import { prisma } from "@dub/prisma";
+import { currencyFormatter } from "@dub/utils";
 import Stripe from "stripe";
 
 export async function payoutPaid(event: Stripe.Event) {
@@ -22,10 +23,13 @@ export async function payoutPaid(event: Stripe.Event) {
 
   const stripePayout = event.data.object as Stripe.Payout;
 
+  const stripePayoutTraceId = stripePayout.trace_id?.value ?? null;
+
   const updatedPayouts = await prisma.payout.updateMany({
     where: {
       status: "sent",
       stripePayoutId: stripePayout.id,
+      stripePayoutTraceId,
     },
     data: {
       status: "completed",
@@ -35,7 +39,7 @@ export async function payoutPaid(event: Stripe.Event) {
   if (partner.email) {
     const sentEmail = await sendEmail({
       variant: "notifications",
-      subject: "Your funds have been transferred to your bank account",
+      subject: `Your ${currencyFormatter(stripePayout.amount, { currency: stripePayout.currency })} auto-withdrawal from Dub has been transferred to your bank`,
       to: partner.email,
       react: PartnerPayoutWithdrawalCompleted({
         email: partner.email,
@@ -43,10 +47,7 @@ export async function payoutPaid(event: Stripe.Event) {
           amount: stripePayout.amount,
           currency: stripePayout.currency,
           arrivalDate: stripePayout.arrival_date,
-          traceId:
-            typeof stripePayout.trace_id === "string"
-              ? stripePayout.trace_id
-              : null,
+          traceId: stripePayoutTraceId,
         },
       }),
     });

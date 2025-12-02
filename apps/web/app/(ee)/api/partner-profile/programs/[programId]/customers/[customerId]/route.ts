@@ -6,7 +6,7 @@ import { withPartnerProfile } from "@/lib/auth/partner";
 import {
   LARGE_PROGRAM_IDS,
   LARGE_PROGRAM_MIN_TOTAL_COMMISSIONS_CENTS,
-} from "@/lib/constants/program";
+} from "@/lib/constants/partner-profile";
 import { generateRandomName } from "@/lib/names";
 import { PartnerProfileCustomerSchema } from "@/lib/zod/schemas/partner-profile";
 import { prisma } from "@dub/prisma";
@@ -40,6 +40,18 @@ export const GET = withPartnerProfile(async ({ partner, params }) => {
   const customer = await prisma.customer.findUnique({
     where: {
       id: customerId,
+    },
+    include: {
+      // find the first commission for this customer and partner
+      commissions: {
+        where: {
+          partnerId: partner.id,
+        },
+        take: 1,
+        orderBy: {
+          createdAt: "asc",
+        },
+      },
     },
   });
 
@@ -107,6 +119,7 @@ export const GET = withPartnerProfile(async ({ partner, params }) => {
         ltv,
         timeToLead,
         timeToSale,
+        firstSaleDate: customer.commissions[0]?.createdAt ?? null,
         events,
         link,
       },

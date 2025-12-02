@@ -1,6 +1,7 @@
 import { convertCurrency } from "@/lib/analytics/convert-currency";
 import { isFirstConversion } from "@/lib/analytics/is-first-conversion";
 import { DubApiError } from "@/lib/api/errors";
+import { detectAndRecordFraudEvent } from "@/lib/api/fraud/detect-record-fraud-event";
 import { includeTags } from "@/lib/api/links/include-tags";
 import { generateRandomName } from "@/lib/names";
 import { createPartnerCommission } from "@/lib/partners/create-partner-commission";
@@ -25,7 +26,7 @@ import {
 } from "@/lib/zod/schemas/sales";
 import { prisma } from "@dub/prisma";
 import { Customer, WorkflowTrigger } from "@dub/prisma/client";
-import { nanoid, R2_URL } from "@dub/utils";
+import { nanoid, pick, R2_URL } from "@dub/utils";
 import { waitUntil } from "@vercel/functions";
 import { z } from "zod";
 import { createId } from "../create-id";
@@ -58,20 +59,11 @@ export const trackSale = async ({
 
   // Return idempotent response if invoiceId is already processed
   if (invoiceId) {
-    // TODO: remove oldKeyValue stuff after 7 days (on Sep 18)
-    const [newKeyValue, oldKeyValue] = await redis.mget([
+    const cachedResponse = await redis.get(
       `trackSale:${workspace.id}:invoiceId:${invoiceId}`,
-      `dub_sale_events:invoiceId:${invoiceId}`,
-    ]);
-
-    if (newKeyValue) {
-      return newKeyValue;
-    } else if (oldKeyValue) {
-      return {
-        eventName,
-        customer: null,
-        sale: null,
-      };
+    );
+    if (cachedResponse) {
+      return cachedResponse;
     }
   }
 
@@ -222,14 +214,25 @@ export const trackSale = async ({
     if (customerAvatar && !isStored(customerAvatar) && finalCustomerAvatar) {
       // persist customer avatar to R2 if it's not already stored
       waitUntil(
-        storage.upload({
-          key: finalCustomerAvatar.replace(`${R2_URL}/`, ""),
-          body: customerAvatar,
-          opts: {
-            width: 128,
-            height: 128,
-          },
-        }),
+        storage
+          .upload({
+            key: finalCustomerAvatar.replace(`${R2_URL}/`, ""),
+            body: customerAvatar,
+            opts: {
+              width: 128,
+              height: 128,
+            },
+          })
+          .catch(async (error) => {
+            console.error("Error persisting customer avatar to R2", error);
+            // if the avatar fails to upload to R2, set the avatar to null in the database
+            if (newCustomer) {
+              await prisma.customer.update({
+                where: { id: newCustomer.id },
+                data: { avatar: null },
+              });
+            }
+          }),
       );
     }
 
@@ -342,7 +345,7 @@ const _trackLead = async ({
 
       // Create partner commission and execute workflows
       if (link.programId && link.partnerId && customer) {
-        await createPartnerCommission({
+        const { commission, webhookPartner } = await createPartnerCommission({
           event: "lead",
           programId: link.programId,
           partnerId: link.partnerId,
@@ -368,11 +371,23 @@ const _trackLead = async ({
               },
             },
           }),
+
           syncPartnerLinksStats({
             partnerId: link.partnerId,
             programId: link.programId,
             eventType: "lead",
           }),
+
+          webhookPartner &&
+            detectAndRecordFraudEvent({
+              program: { id: link.programId },
+              partner: pick(webhookPartner, ["id", "email", "name"]),
+              customer: pick(customer, ["id", "email", "name"]),
+              commission: { id: commission?.id },
+              link: pick(link, ["id"]),
+              click: pick(leadEventData, ["url", "referer"]),
+              event: { id: leadEventData.event_id },
+            }),
         ]);
       }
 
@@ -568,11 +583,23 @@ const _trackSale = async ({
               },
             },
           }),
+
           syncPartnerLinksStats({
             partnerId: link.partnerId,
             programId: link.programId,
             eventType: "sale",
           }),
+
+          webhookPartner &&
+            detectAndRecordFraudEvent({
+              program: { id: link.programId },
+              partner: pick(webhookPartner, ["id", "email", "name"]),
+              customer: pick(customer, ["id", "email", "name"]),
+              commission: { id: createdCommission.commission?.id },
+              link: pick(link, ["id"]),
+              click: pick(saleData, ["url", "referer"]),
+              event: { id: saleData.event_id },
+            }),
         ]);
       }
 

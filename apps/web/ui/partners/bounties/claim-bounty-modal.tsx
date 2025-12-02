@@ -300,12 +300,12 @@ function ClaimBountyModalContent({ bounty }: ClaimBountyModalProps) {
                     </span>
                   </div>
 
-                  <div className="text-content-subtle flex items-center gap-2 text-sm font-medium">
-                    <Gift className="size-3.5 shrink-0" />
-                    <span className="truncate">
-                      {getBountyRewardDescription(bounty)}
-                    </span>
-                  </div>
+                  {getBountyRewardDescription(bounty) && (
+                    <div className="text-content-subtle flex items-center gap-2 text-sm font-medium">
+                      <Gift className="size-3.5" />
+                      <span>{getBountyRewardDescription(bounty)}</span>
+                    </div>
+                  )}
 
                   {submission ? (
                     <div className="mt-3 grid gap-2">

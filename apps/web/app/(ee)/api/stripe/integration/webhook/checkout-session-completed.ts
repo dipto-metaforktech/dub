@@ -1,6 +1,7 @@
 import { convertCurrency } from "@/lib/analytics/convert-currency";
 import { isFirstConversion } from "@/lib/analytics/is-first-conversion";
 import { createId } from "@/lib/api/create-id";
+import { detectAndRecordFraudEvent } from "@/lib/api/fraud/detect-record-fraud-event";
 import { includeTags } from "@/lib/api/links/include-tags";
 import { syncPartnerLinksStats } from "@/lib/api/partners/sync-partner-links-stats";
 import { executeWorkflows } from "@/lib/api/workflows/execute-workflows";
@@ -26,8 +27,8 @@ import {
   transformSaleEventData,
 } from "@/lib/webhook/transform";
 import { prisma } from "@dub/prisma";
-import { Customer, WorkflowTrigger } from "@dub/prisma/client";
-import { COUNTRIES_TO_CONTINENTS, nanoid } from "@dub/utils";
+import { Customer, Project, WorkflowTrigger } from "@dub/prisma/client";
+import { COUNTRIES_TO_CONTINENTS, nanoid, pick } from "@dub/utils";
 import { waitUntil } from "@vercel/functions";
 import type Stripe from "stripe";
 import { getConnectedCustomer } from "./utils/get-connected-customer";
@@ -59,6 +60,22 @@ export async function checkoutSessionCompleted(
   let leadEvent: LeadEventTB | undefined;
   let linkId: string | undefined;
 
+  const workspace = await prisma.project.findUnique({
+    where: {
+      stripeConnectId: stripeAccountId,
+    },
+    select: {
+      id: true,
+      stripeConnectId: true,
+      defaultProgramId: true,
+      webhookEnabled: true,
+    },
+  });
+
+  if (!workspace) {
+    return `Workspace with stripeConnectId ${stripeAccountId} not found, skipping...`;
+  }
+
   /*
       for stripe checkout links:
       - if client_reference_id is a dub_id, we find the click event
@@ -74,31 +91,21 @@ export async function checkoutSessionCompleted(
       return `Click event with dub_id ${dubClickId} not found, skipping...`;
     }
 
-    const workspace = await prisma.project.findUnique({
-      where: {
-        stripeConnectId: stripeAccountId,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!workspace) {
-      return `Workspace with stripeConnectId ${stripeAccountId} not found, skipping...`;
-    }
-
     existingCustomer = await prisma.customer.findFirst({
       where: {
         projectId: workspace.id,
         // check for existing customer with the same externalId (via clickId or email)
-        // TODO: should we support checks for email and stripeCustomerId too?
         OR: [
           {
             externalId: clickEvent.click_id,
           },
-          {
-            externalId: stripeCustomerEmail,
-          },
+          ...(stripeCustomerEmail
+            ? [
+                {
+                  externalId: stripeCustomerEmail,
+                },
+              ]
+            : []),
         ],
       },
     });
@@ -188,6 +195,7 @@ export async function checkoutSessionCompleted(
           const promoCodeResponse = await attributeViaPromoCode({
             promotionCodeId,
             stripeAccountId,
+            workspace,
             mode,
             charge,
           });
@@ -201,9 +209,22 @@ export async function checkoutSessionCompleted(
         }
       }
     } else {
-      existingCustomer = await prisma.customer.findUnique({
+      // find customer by stripeCustomerId or email
+      existingCustomer = await prisma.customer.findFirst({
         where: {
-          stripeCustomerId,
+          OR: [
+            {
+              stripeCustomerId,
+            },
+            ...(stripeCustomerEmail
+              ? [
+                  {
+                    projectId: workspace.id,
+                    email: stripeCustomerEmail,
+                  },
+                ]
+              : []),
+          ],
         },
       });
 
@@ -231,6 +252,7 @@ export async function checkoutSessionCompleted(
           const promoCodeResponse = await attributeViaPromoCode({
             promotionCodeId,
             stripeAccountId,
+            workspace,
             mode,
             charge,
           });
@@ -349,7 +371,7 @@ export async function checkoutSessionCompleted(
     linkId,
   });
 
-  const [_sale, linkUpdated, workspace] = await Promise.all([
+  const [_sale, linkUpdated] = await Promise.all([
     recordSale(saleData),
 
     // update link stats
@@ -433,6 +455,7 @@ export async function checkoutSessionCompleted(
         },
       },
     });
+
     webhookPartner = createdCommission?.webhookPartner;
 
     waitUntil(
@@ -448,11 +471,23 @@ export async function checkoutSessionCompleted(
             },
           },
         }),
+
         syncPartnerLinksStats({
           partnerId: link.partnerId,
           programId: link.programId,
           eventType: "sale",
         }),
+
+        webhookPartner &&
+          detectAndRecordFraudEvent({
+            program: { id: link.programId },
+            partner: pick(webhookPartner, ["id", "email", "name"]),
+            customer: pick(customer, ["id", "email", "name"]),
+            commission: { id: createdCommission.commission?.id },
+            link: pick(link, ["id"]),
+            click: pick(saleData, ["url", "referer"]),
+            event: { id: saleData.event_id },
+          }),
       ]),
     );
   }
@@ -481,11 +516,16 @@ export async function checkoutSessionCompleted(
 async function attributeViaPromoCode({
   promotionCodeId,
   stripeAccountId,
+  workspace,
   mode,
   charge,
 }: {
   promotionCodeId: string;
   stripeAccountId: string;
+  workspace: Pick<
+    Project,
+    "id" | "defaultProgramId" | "stripeConnectId" | "webhookEnabled"
+  >;
   mode: StripeMode;
   charge: Stripe.Checkout.Session;
 }) {
@@ -499,26 +539,6 @@ async function attributeViaPromoCode({
   if (!promotionCode) {
     console.log(
       `Promotion code ${promotionCodeId} not found in connected account ${stripeAccountId}, skipping...`,
-    );
-    return null;
-  }
-
-  // Find the workspace
-  const workspace = await prisma.project.findUnique({
-    where: {
-      stripeConnectId: stripeAccountId,
-    },
-    select: {
-      id: true,
-      stripeConnectId: true,
-      defaultProgramId: true,
-      webhookEnabled: true,
-    },
-  });
-
-  if (!workspace) {
-    console.log(
-      `Workspace with stripeConnectId ${stripeAccountId} not found, skipping...`,
     );
     return null;
   }
