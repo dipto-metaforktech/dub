@@ -14,26 +14,35 @@ export const getLinkViaEdge = async ({
   domain: string;
   key: string;
 }) => {
-  const isCaseSensitive = isCaseSensitiveDomain(domain);
-  const keyToQuery = isCaseSensitive
-    ? // for case sensitive domains, we need to encode the key
-      encodeKey(key)
-    : // for non-case sensitive domains, we need to make sure that the key is always URI-decoded + punycode-encoded
-      // (cause that's how we store it in MySQL)
-      punyEncode(decodeURIComponent(key));
+  try {
+    const isCaseSensitive = isCaseSensitiveDomain(domain);
+    const keyToQuery = isCaseSensitive
+      ? // for case sensitive domains, we need to encode the key
+        encodeKey(key)
+      : // for non-case sensitive domains, we need to make sure that the key is always URI-decoded + punycode-encoded
+        // (cause that's how we store it in MySQL)
+        punyEncode(decodeURIComponent(key));
 
-  const { rows } =
-    (await conn.execute("SELECT * FROM Link WHERE domain = ? AND `key` = ?", [
-      domain,
-      keyToQuery,
-    ])) || {};
+    const { rows } =
+      (await conn.execute("SELECT * FROM Link WHERE domain = ? AND `key` = ?", [
+        domain,
+        keyToQuery,
+      ])) || {};
 
-  const link =
-    rows && Array.isArray(rows) && rows.length > 0
-      ? (rows[0] as EdgeLinkProps)
+    const link =
+      rows && Array.isArray(rows) && rows.length > 0
+        ? (rows[0] as EdgeLinkProps)
+        : null;
+
+    return link
+      ? { ...link, key: decodeKeyIfCaseSensitive({ domain, key }) }
       : null;
-
-  return link
-    ? { ...link, key: decodeKeyIfCaseSensitive({ domain, key }) }
-    : null;
+  } catch (error) {
+    if (error.message.includes("Forbidden")) {
+      console.error(
+        `Database connection forbidden. Check credentials and firewall rules for domain: ${domain}`,
+      );
+    }
+    throw error;
+  }
 };
